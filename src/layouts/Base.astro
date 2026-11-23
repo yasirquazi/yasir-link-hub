@@ -5,7 +5,7 @@ interface Props { title: string; description: string; preload?: string[]; }
 const { title, description, preload = ['instrument-serif-latin-400-normal'] } = Astro.props;
 // icons are linked relative to the page, so they work on any host
 const R = rootFrom(depthOf(Astro.url.pathname));
-const SITE = Astro.site || new URL('https://yasir-link-hub.yasirquazi2000.workers.dev');
+const SITE = Astro.site || new URL('https://yasirquazi.yasirquazi2000.workers.dev');
 const pageURL = new URL(Astro.url.pathname, SITE).href;
 const ogImage = new URL('/og.jpg', SITE).href;
 const I = R + 'icons/';
