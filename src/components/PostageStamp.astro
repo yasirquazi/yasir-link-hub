@@ -1,0 +1,72 @@
+---
+// A postage stamp with perforated edges, an engraved frame, your name and links,
+// and a postmark pressed across one corner.
+import { site } from '../data/site.js';
+// Stamp outline: a rectangle whose edges are bitten by evenly spaced half-circles.
+const W = 240, H = 300, r = 5.5, gap = 15; // hole radius, hole spacing
+function edge(x0, y0, x1, y1) {
+  const len = Math.hypot(x1 - x0, y1 - y0), n = Math.round(len / gap), ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+  const step = len / n; let d = '';
+  for (let i = 0; i < n; i++) {
+    const c = step * (i + 0.5);
+    const ax = x0 + ux * (c - r), ay = y0 + uy * (c - r), bx = x0 + ux * (c + r), by = y0 + uy * (c + r);
+    d += `L${ax.toFixed(2)} ${ay.toFixed(2)}A${r} ${r} 0 0 0 ${bx.toFixed(2)} ${by.toFixed(2)}`;
+  }
+  return d + `L${x1} ${y1}`;
+}
+const outline = `M0 0${edge(0, 0, W, 0)}${edge(W, 0, W, H)}${edge(W, H, 0, H)}${edge(0, H, 0, 0)}Z`;
+---
+<aside class="ps" aria-label="About and links">
+  <div class="ps-paper">
+    <svg class="ps-shape" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"><path d={outline} /></svg>
+    <div class="ps-frame">
+      <svg class="ps-orn" viewBox="0 0 200 40" aria-hidden="true">
+        <path d="M8 20h60M132 20h60" />
+        <path d="M100 8c-8 0-12 6-12 12s4 12 12 12 12-6 12-12-4-12-12-12Z" />
+        <path d="M100 13l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" class="fill" />
+        <path d="M70 20c6-6 10-6 16 0-6 6-10 6-16 0ZM130 20c-6-6-10-6-16 0 6 6 10 6 16 0Z" class="fill" />
+      </svg>
+      <h1 class="ps-name">Yasir<br />Quazi</h1>
+      <p class="ps-role">{site.role} · {site.place}</p>
+      <ul class="ps-links">
+        {site.social.map((s) => (
+          <li><a href={s.url} {...(s.url.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener' })}>{s.label}<span aria-hidden="true"> ↗</span></a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</aside>
+
+<style>
+  .ps { position: relative; width: 100%; }
+  .ps-paper { position: relative; width: 240px; height: 300px; }
+  .ps-shape { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25)); }
+  .ps-shape path { fill: #f1e3c4; }
+  .ps-frame {
+    position: relative; height: 100%;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    /* the stamp runs off the left and bottom of the screen, so the words sit up and to the right */
+    padding: 22px 22px 70px 52px;
+  }
+  .ps-orn { width: 78%; height: auto; margin-top: 2px; }
+  .ps-orn path { fill: none; stroke: var(--st-ink); stroke-width: 1.4; }
+  .ps-orn .fill { fill: var(--st-ink); stroke: none; }
+  .ps-name {
+    margin: 4px 0 0; font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif; font-weight: 700;
+    font-size: 28px; line-height: 1.02; color: var(--st-ink); letter-spacing: 0.01em;
+  }
+  .ps-role {
+    margin: 6px 0 0; font-family: 'Cinzel', Georgia, serif; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #5a3a22;
+  }
+  .ps-links {
+    list-style: none; margin: auto 0 0; padding: 7px 0 0; width: 100%;
+    border-top: 1px solid rgb(110 20 28 / 0.35);
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .ps-links a {
+    display: block; padding: 3px 0; font-family: 'IM Fell English', Georgia, serif; font-style: italic;
+    font-size: 15px; color: #3a2416; text-decoration: none;
+  }
+  .ps-links a:hover { color: var(--st-ink); text-decoration: underline; text-underline-offset: 3px; }
+</style>

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+*.log
+.env*
+tools/blender/out/
+tools/art/maps/
