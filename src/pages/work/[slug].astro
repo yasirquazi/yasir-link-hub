@@ -3,7 +3,7 @@
 // one paragraph about the work, and the way out to the case study or live site.
 import Base from '../../layouts/Base.astro';
 import { projects } from '../../data/projects.js';
-import { toTable } from '../../lib/paths.js';
+import { toHome } from '../../lib/paths.js';
 
 export function getStaticPaths() {
   return projects.map((p) => ({ params: { slug: p.slug }, props: { p } }));
@@ -21,7 +21,7 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
 
   <div class="page">
     <nav class="top">
-      <a class="back" href={toTable()} aria-label="Back to the map of works">
+      <a class="back" href={toHome()} aria-label="Back to the map of works">
         <svg viewBox="0 0 48 16" aria-hidden="true"><path d="M47 8H3M10 1 2 8l8 7" /></svg>
         <span>The map</span>
       </a>

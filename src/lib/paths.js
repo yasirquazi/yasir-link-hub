@@ -3,11 +3,7 @@
 const explicit = import.meta.env.PREVIEW === '1' || process.env.PREVIEW === '1';
 const idx = explicit ? 'index.html' : '';
 
-export const toProject = (slug, fromRoot = true) =>
-  (fromRoot ? `work/${slug}/` : `../${slug}/`) + idx;
-
+// from the home page (the map) to a project page
+export const toProject = (slug) => `work/${slug}/` + idx;
+// from a project page back to the map
 export const toHome = () => `../../${idx}`;
-
-export const toCanvas = () => `../../canvas/${idx}`;
-
-export const toTable = () => `../../table/${idx}`;

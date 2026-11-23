@@ -24,7 +24,7 @@ Connect this repo in Cloudflare Pages with:
 |---|---|
 | Projects (titles, descriptions, links, case-study URLs) | `src/data/projects.js` |
 | Your name and social links on the stamp | `src/data/site.js` |
-| The map table page | `src/pages/table.astro` |
+| The map (home page) | `src/pages/index.astro` |
 | Project detail pages | `src/pages/work/[slug].astro` |
 | Artifact images, desk objects, sounds | `public/art`, `public/table` |
 | Favicon set | `public/icons` |
