@@ -22,9 +22,8 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
 <Base
   title="Yasir Quazi — Product Designer"
   description="A desk with a map of Yasir Quazi's product design, client work and personal projects."
+  preload={['cinzel-latin-700-normal', 'im-fell-english-latin-400-italic']}
 >
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=IM+Fell+English:ital@0;1&display=swap" />
   <script is:inline data-astro-rerun>
     document.documentElement.classList.add('tb');
     try { if (sessionStorage.getItem('tbIntro')) document.documentElement.classList.add('seen'); } catch (e) {}
@@ -35,7 +34,10 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       <div class="world" id="world">
         <div class="tabletop" id="tabletop" style={`--grain-tile:url(${A}/burgundy.webp)`}></div>
 
-        <img class="paper" id="paper" alt="" decoding="async" draggable="false" data-src-l={`${A}/paper-landscape.webp`} data-src-p={`${A}/paper-portrait.webp`} />
+        <picture>
+          <source media="(max-width: 759px), (max-aspect-ratio: 95/100)" srcset={`${A}/paper-portrait.webp`} width="1240" height="1780" />
+          <img class="paper" id="paper" alt="" fetchpriority="high" decoding="async" draggable="false" src={`${A}/paper-landscape.webp`} width="2040" height="1450" />
+        </picture>
 
         <div class="map" id="map">
           <svg class="rhumb" id="rhumb" aria-hidden="true"></svg>
@@ -82,8 +84,8 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
         <div class="flame" id="flame" aria-hidden="true"><i></i></div>
         <div class="candle-light" id="candleLight" aria-hidden="true"></div>
 
-        <img class="window shade" id="shade" src={`${A}/window-shade.webp`} alt="" aria-hidden="true" draggable="false" />
-        <img class="window light" id="light" src={`${A}/window-light.webp`} alt="" aria-hidden="true" draggable="false" />
+        <img class="window shade" id="shade" fetchpriority="high" src={`${A}/window-shade.webp`} alt="" aria-hidden="true" draggable="false" />
+        <img class="window light" id="light" fetchpriority="high" src={`${A}/window-light.webp`} alt="" aria-hidden="true" draggable="false" />
       </div>
     </div>
     <div class="vignette" aria-hidden="true"></div>
@@ -185,7 +187,6 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       // table, paper (its image has a 70px margin for the torn edge and shadow)
       var EX = 900; place($('tabletop'), T.x0 - EX, T.y0 - EX, T.x1 - T.x0 + EX * 2, T.y1 - T.y0 + EX * 2);
       var pe = $('paper');
-      if (changed) pe.src = pe.dataset['src' + (m === 'l' ? 'L' : 'P')];
       place(pe, -L.PW / 2 - 70, -L.PH / 2 - 70, L.PW + 140, L.PH + 140);
       place(map, -L.PW / 2, -L.PH / 2, L.PW, L.PH);
       ['shade', 'light'].forEach(function (id) { place($(id), T.x0, T.y0, T.x1 - T.x0, T.y1 - T.y0); });
@@ -401,7 +402,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     } else if (seen || reduce) { z = z0; py = hy0; render(); }
     else {
       z = ZMIN; render();
-      setTimeout(function () { animateTo(0, hy0, z0, 1800); }, 1500);
+      setTimeout(function () { animateTo(0, hy0, z0, 1500); }, 800);
     }
     html.classList.add('ready');
     setTimeout(hideHint, 7000);
@@ -421,6 +422,8 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
   .tilt { position: absolute; inset: 0; transform-origin: 50% 50%; transform-style: flat; }
   .world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
   .world > * { position: absolute; }
+  .world > picture { display: contents; }
+  .paper { position: absolute; max-width: none; }
 
   /* ── The table: baroque burgundy paper with a pressed damask ── */
   .tabletop::before { content: ''; position: absolute; inset: 0; background: rgb(18 6 4 / 0.38); }
@@ -558,18 +561,18 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
   :global(.snd) .i-on { display: block; }
 
   /* ── Opening: lights come up, things settle onto the desk ── */
-  .curtain { position: fixed; inset: 0; z-index: 50; background: #0a0204; pointer-events: none; animation: curtain 1.6s ease 0.2s both; }
-  @keyframes curtain { to { opacity: 0; visibility: hidden; } }
+  .curtain { position: fixed; inset: 0; z-index: 50; background: #0a0204; pointer-events: none; animation: curtain 1.1s ease 0.1s both; }
+  @keyframes curtain { to { opacity: 0; } }
   :global(.seen) .curtain { animation-duration: 0.5s; animation-delay: 0s; }
-  .paper, .map { animation: drop 1.3s var(--ease) 0.5s both; }
+  .paper, .map { animation: drop 1.1s var(--ease) 0.25s both; }
   @keyframes drop { from { opacity: 0; transform: translate(-30px, -40px) rotate(-2.5deg) scale(1.04); } }
   .obj .obj-im img { animation: land 1.1s var(--ease) both; animation-delay: var(--od, 1s); }
   .obj .obj-sh img { animation: land-sh 1.1s var(--ease) both; animation-delay: var(--od, 1s); }
   .obj-camera { --od: 0.9s; } .obj-inkwell { --od: 1.05s; } .obj-pen { --od: 1.2s; } .obj-compass { --od: 1.3s; } .obj-candle { --od: 1.15s; }
   @keyframes land { from { opacity: 0; transform: translate(-50px, -70px) scale(1.12); } }
   @keyframes land-sh { from { opacity: 0; transform: translate(40px, 50px) scale(1.15); } }
-  .site { animation: ink 1s ease both; animation-delay: calc(1.5s + var(--i) * 0.09s); }
-  @keyframes ink { from { opacity: 0; filter: blur(6px); } }
+  .site { animation: ink 0.9s ease both; animation-delay: calc(0.9s + var(--i) * 0.08s); }
+  @keyframes ink { from { opacity: 0; translate: 0 8px; } }
   .seal { animation: press 0.7s cubic-bezier(.3, 1.4, .5, 1) 2.2s both; }
   @keyframes press { from { opacity: 0; transform: rotate(-10deg) scale(1.9); } to { transform: rotate(14deg); } }
   .stamp { animation: slip 1s var(--ease) 2s both; }

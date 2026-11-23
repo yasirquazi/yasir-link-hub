@@ -9,13 +9,16 @@ const { p, variant = 'item' } = Astro.props;
 const m = motifFor(p.slug);
 const style = `--c:${m.c};--c2:${m.c2};--ink:${m.ink};--ms:${m.size}`;
 // Blender-rendered artifact, linked relative to the current page so it works on any host
-const art = p.art || `${rootFrom(depthOf(Astro.url.pathname))}art/${p.slug}.webp`;
+const base = `${rootFrom(depthOf(Astro.url.pathname))}art/${p.slug}`;
+const art = p.art || `${base}.webp`;
+// a 240px version for ordinary screens, the 480px one for sharp ones (the emblem shows at ~215px)
+const srcset = p.art ? undefined : `${base}-240.webp 240w, ${base}.webp 480w`;
 ---
 <div class={`mo mo-${variant}`} style={style}>
   <div class="mo-art" style={`view-transition-name:card-${p.slug}`}>
     <div class="mo-tilt">
       {art ? (
-        <img class="mo-img" src={art} alt="" width="160" height="160" decoding="async" draggable="false" />
+        <img class="mo-img" src={art} srcset={srcset} sizes="215px" alt="" width="160" height="160" decoding="async" draggable="false" />
       ) : (
         <>
           <svg class="mo-base" viewBox="0 0 160 160" aria-hidden="true" set:html={m.base} />
