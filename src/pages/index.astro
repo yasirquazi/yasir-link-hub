@@ -348,7 +348,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     // fetch the music early, so it starts the moment sound is switched on
     function prefetchMusic() { fetchBytes('music').catch(function () { delete bytes.music; }); }
     snd.addEventListener('pointerenter', prefetchMusic); snd.addEventListener('focus', prefetchMusic);
-    if (soundOn) (window.requestIdleCallback || setTimeout)(prefetchMusic, 1500);
+    if (soundOn) setTimeout(prefetchMusic, 1500);
     function syncSnd() { snd.setAttribute('aria-pressed', soundOn); snd.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off'); html.classList.toggle('snd', soundOn); }
     syncSnd();
     snd.addEventListener('click', function () {

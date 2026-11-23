@@ -37,6 +37,7 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
         ))}
       </ol>
       <div class="reel-ctrl">
+        <span class="count" id="count" aria-live="polite"></span>
         <button type="button" id="prev" aria-label="Previous screen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
         </button>
@@ -78,11 +79,18 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
       var t = document.getElementById('track'), prev = document.getElementById('prev'), next = document.getElementById('next');
       if (!t) return;
       function step() { var s = t.querySelector('.plate'); return s ? s.getBoundingClientRect().width + parseFloat(getComputedStyle(t).columnGap || 24) : 400; }
-      function sync() { prev.disabled = t.scrollLeft < 4; next.disabled = t.scrollLeft + t.clientWidth > t.scrollWidth - 4; }
+      var R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'], n = t.children.length, cnt = document.getElementById('count');
+      var ctrl = document.querySelector('.reel-ctrl');
+      function sync() {
+        ctrl.hidden = t.scrollWidth <= t.clientWidth + 4;
+        prev.disabled = t.scrollLeft < 4; next.disabled = t.scrollLeft + t.clientWidth > t.scrollWidth - 4;
+        var i = next.disabled ? n - 1 : Math.round(t.scrollLeft / step());
+        cnt.textContent = R[Math.min(i, n - 1)] + ' / ' + R[n - 1];
+      }
       prev.addEventListener('click', function () { t.scrollBy({ left: -step(), behavior: 'smooth' }); });
       next.addEventListener('click', function () { t.scrollBy({ left: step(), behavior: 'smooth' }); });
       t.addEventListener('scroll', sync, { passive: true }); addEventListener('resize', sync); sync();
-      if (t.scrollWidth <= t.clientWidth + 4) document.querySelector('.reel-ctrl').hidden = true;
+      addEventListener('load', sync);
     })();
   </script>
 </Base>
@@ -105,7 +113,7 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
   }
 
   /* ── Back ── */
-  .top { padding: max(22px, env(safe-area-inset-top)) var(--gut) 18px; }
+  .top { width: var(--col); margin: 0 auto; padding: max(22px, env(safe-area-inset-top)) 0 18px; }
   .back {
     display: inline-flex; align-items: center; gap: 12px; min-height: 44px;
     text-decoration: none; color: var(--ink);
@@ -116,16 +124,16 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
   .back:hover { color: var(--ox); }
 
   /* ── Plates: start on the text column and run off the right edge ── */
+  .reel { width: var(--col); margin: 0 auto; }
   .track {
-    list-style: none; margin: 0; padding: 0 var(--gut);
+    list-style: none; margin: 0; padding: 0;
     display: flex; gap: 24px; overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory; scroll-padding-inline: var(--gut);
+    scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
   .track::-webkit-scrollbar { display: none; }
-  .track::after { content: ''; flex: 0 0 1px; }
   .plate {
-    flex: 0 0 var(--col); aspect-ratio: 16 / 10.5; scroll-snap-align: start;
+    flex: 0 0 100%; aspect-ratio: 16 / 10.5; scroll-snap-align: start;
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     background:
       linear-gradient(rgb(255 250 238 / 0.35), rgb(120 80 40 / 0.07)),
@@ -133,11 +141,13 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
     box-shadow: inset 0 0 0 1px rgb(70 42 26 / 0.22), inset 0 0 0 7px #e4d6ba, inset 0 0 0 8px rgb(70 42 26 / 0.18),
       0 1px 0 rgb(255 255 255 / 0.4), 0 14px 30px -18px rgb(60 30 10 / 0.45);
   }
-  .reel.app .plate { flex-basis: min(300px, 62vw); aspect-ratio: 9 / 18; }
+  .reel.app .plate { flex-basis: calc((100% - 48px) / 3); aspect-ratio: 9 / 18; }
   .plate-no { font: 500 italic 26px/1 'Cormorant Garamond', Georgia, serif; color: var(--ink-2); }
   .plate-note { font: 600 11px/1 'Cormorant Garamond', Georgia, serif; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(109 87 69 / 0.75); }
 
-  .reel-ctrl { width: var(--col); margin: 14px auto 0; display: flex; justify-content: flex-end; gap: 6px; }
+  .reel-ctrl[hidden] { display: none; }
+  .reel-ctrl { margin-top: 14px; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .count { margin-right: auto; font: 500 italic 18px/1 'Cormorant Garamond', Georgia, serif; color: var(--ink-2); }
   .reel-ctrl button {
     width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer;
     background: none; border: 0; color: var(--ink); transition: color 0.2s, transform 0.2s;
@@ -206,9 +216,8 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
   .also a { color: var(--ox); margin-left: 6px; }
 
   @media (max-width: 560px) {
-    .track { gap: 14px; }
-    .plate { flex-basis: 84vw; aspect-ratio: 4 / 3.1; }
-    .reel.app .plate { flex-basis: 62vw; aspect-ratio: 9 / 18; }
+      .plate { aspect-ratio: 4 / 3.1; }
+    .reel.app .plate { flex-basis: 72%; aspect-ratio: 9 / 18; }
     .label { margin-top: 36px; }
     .ctas { flex-direction: column; }
     .btn { width: 100%; }
