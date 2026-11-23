@@ -1,4 +1,5 @@
 ---
+import { rootFrom, depthOf } from '../lib/paths.js';
 // A project emblem: base shape + floating symbol, with the tag and name below.
 // Built at 180px wide; parents scale it.
 import { motifFor } from '../lib/motifs.js';
@@ -8,8 +9,7 @@ const { p, variant = 'item' } = Astro.props;
 const m = motifFor(p.slug);
 const style = `--c:${m.c};--c2:${m.c2};--ink:${m.ink};--ms:${m.size}`;
 // Blender-rendered artifact, linked relative to the current page so it works on any host
-const depth = Astro.url.pathname.replace(/index\.html$/, '').split('/').filter(Boolean).length;
-const art = p.art || `${depth ? '../'.repeat(depth) : './'}art/${p.slug}.webp`;
+const art = p.art || `${rootFrom(depthOf(Astro.url.pathname))}art/${p.slug}.webp`;
 ---
 <div class={`mo mo-${variant}`} style={style}>
   <div class="mo-art" style={`view-transition-name:card-${p.slug}`}>

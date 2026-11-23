@@ -1,9 +1,10 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+import { rootFrom, depthOf, PREVIEW } from '../lib/paths.js';
 interface Props { title: string; description: string; }
 const { title, description } = Astro.props;
 // icons are linked relative to the page, so they work on any host
-const depth = Astro.url.pathname.replace(/index\.html$/, '').split('/').filter(Boolean).length;
-const R = depth ? '../'.repeat(depth) : './';
+const R = rootFrom(depthOf(Astro.url.pathname));
 const I = R + 'icons/';
 const F = R + 'fonts/';
 const faces = [
@@ -30,6 +31,14 @@ const faces = [
     <link rel="icon" type="image/png" sizes="192x192" href={I + 'icon-192.png'} />
     <link rel="apple-touch-icon" href={I + 'apple-touch-icon.png'} />
     <link rel="manifest" href={I + 'site.webmanifest'} />
+    <meta name="yq-root" content={R} />
+    {!PREVIEW && <ClientRouter fallback="swap" />}
+    <script>
+      // one sound engine for the whole visit, and a way for pages to move without a full reload
+      import '../scripts/sound.js';
+      import { navigate } from 'astro:transitions/client';
+      if (document.querySelector('meta[name="astro-view-transitions-enabled"]')) (window as any).YQnav = navigate;
+    </script>
     <link rel="preload" href={F + 'instrument-serif-latin-400-normal.woff2'} as="font" type="font/woff2" crossorigin />
     <style set:html={faces}></style>
   </head>
@@ -51,7 +60,6 @@ const faces = [
 
 <style is:global>
   /* Native cross-page morphing: no JavaScript router. */
-  @view-transition { navigation: auto; }
 
   :root {
     --paper: #f2e8d5;

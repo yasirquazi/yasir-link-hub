@@ -3,10 +3,10 @@ import Base from '../layouts/Base.astro';
 import Motif from '../components/Motif.astro';
 import PostageStamp from '../components/PostageStamp.astro';
 import { projects } from '../data/projects.js';
-import { toProject } from '../lib/paths.js';
+import { toProject, rootFrom } from '../lib/paths.js';
 import frames from '../data/table-objects.json';
 
-const A = './table'; // assets folder, relative to this page
+const A = rootFrom(0) + 'table'; // assets folder
 const notes = [784, 880, 1047, 1175, 1319, 1568, 1760, 2093];
 const objects = [
   { id: 'camera', label: 'Camera: take a picture', depth: 16, act: true },
@@ -25,7 +25,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
 >
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=IM+Fell+English:ital@0;1&display=swap" />
-  <script is:inline>
+  <script is:inline data-astro-rerun>
     document.documentElement.classList.add('tb');
     try { if (sessionStorage.getItem('tbIntro')) document.documentElement.classList.add('seen'); } catch (e) {}
   </script>
@@ -110,7 +110,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
   <div class="grain" style={`background-image:${grain}`} aria-hidden="true"></div>
   <div class="curtain" aria-hidden="true"></div>
 
-  <script is:inline>
+  <script is:inline data-astro-rerun>
   (function () {
     var html = document.documentElement;
     var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -121,6 +121,10 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     var objs = [].slice.call(document.querySelectorAll('.obj'));
     var store = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} };
     try { sessionStorage.setItem('from', 'table'); } catch (e) {}
+    // Pages are swapped in place, so everything this page hangs on window/document is
+    // dropped (and the animation loop stopped) when we leave.
+    var CTL = new AbortController(), SIG = CTL.signal;
+    document.addEventListener('astro:before-swap', function () { CTL.abort(); if (raf) cancelAnimationFrame(raf); raf = 0; }, { once: true });
 
     /* ───────── Layouts: a landscape map for wide screens, portrait for phones ───────── */
     var LAYOUT = {
@@ -285,78 +289,24 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     function dragBy(dx, dy) { var o = over(); px += dx / z * (o.x && Math.sign(dx) === -Math.sign(o.x) ? 0.35 : 1); py += dy / z * (o.y && Math.sign(dy) === -Math.sign(o.y) ? 0.35 : 1); }
     function hideHint() { hint.classList.add('gone'); }
 
-    /* ───────── Sound: recorded effects and a quiet room, loaded only once sound is on ───────── */
-    var SFX_DIR = $('vp').dataset.sfx;
-    var FILES = { hover: 'hover', open: 'open', rustle: 'rustle', shutter: 'shutter', blow: 'blow', light: 'light', zoom: 'zoom', press: 'press', music: 'music' };
-    var GAIN = { hover: 0.18, open: 0.45, rustle: 0.14, shutter: 0.65, blow: 0.55, light: 0.5, zoom: 0.24, press: 0.36 };
-    var MUS_VOL = 0.24;
-    var A = null, master = null, bufs = {}, loading = {}, soundOn = store('sfx') === '1', lastHover = 0, bed = null;
-    function ac() {
-      if (!A) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; A = new C(); master = A.createGain(); master.connect(A.destination); }
-      if (A.state === 'suspended') A.resume();
-      return A;
-    }
-    var bytes = {};
-    function fetchBytes(name) { return bytes[name] || (bytes[name] = fetch(SFX_DIR + FILES[name] + '.mp3').then(function (r) { return r.arrayBuffer(); })); }
-    function load(name) {
-      if (bufs[name] || loading[name]) return loading[name] || Promise.resolve(bufs[name]);
-      var a = ac(); if (!a) return Promise.resolve(null);
-      loading[name] = fetchBytes(name)
-        .then(function (d) { return new Promise(function (ok, no) { a.decodeAudioData(d, ok, no); }); })
-        .then(function (b) { bufs[name] = b; return b; })
-        .catch(function () { return null; });
-      return loading[name];
-    }
-    function play(name, rate) {
-      if (!soundOn) return;
-      var a = ac(), b = bufs[name]; if (!a) return;
-      if (!b) { load(name); return; } // first use warms it up; it plays from then on
-      var s = a.createBufferSource(), g = a.createGain();
-      s.buffer = b; s.playbackRate.value = rate || 1; g.gain.value = GAIN[name] || 0.5;
-      s.connect(g); g.connect(master); s.start();
-    }
-    // Soft background music that crossfades over itself, so there is never a gap
-    function startBed() {
-      var a = ac(); if (!a || bed) return;
-      bed = { g: a.createGain(), on: true, timer: 0 };
-      bed.g.gain.setValueAtTime(1, a.currentTime);
-      bed.g.connect(master);
-      load('music').then(function (b) {
-        if (!b || !bed || !bed.on) return;
-        var X = 5; // seconds of crossfade between passes
-        (function pass(t, first) {
-          if (!bed || !bed.on) return;
-          var s = a.createBufferSource(), g = a.createGain(); s.buffer = b; s.connect(g); g.connect(bed.g);
-          // the very first pass comes in within a second; later passes crossfade slowly
-          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(MUS_VOL, t + (first ? 1 : X));
-          g.gain.setValueAtTime(MUS_VOL, t + b.duration - X); g.gain.exponentialRampToValueAtTime(0.0001, t + b.duration);
-          s.start(t); bed.mus = s;
-          bed.timer = setTimeout(function () { pass(t + b.duration - X); }, (t + b.duration - X - a.currentTime - 1) * 1000);
-        })(a.currentTime + 0.05, true);
-      });
-    }
-    function stopBed() {
-      if (!bed || !A) return; var b = bed; bed = null; b.on = false; clearTimeout(b.timer);
-      b.g.gain.cancelScheduledValues(A.currentTime); b.g.gain.setValueAtTime(b.g.gain.value || 1, A.currentTime);
-      b.g.gain.exponentialRampToValueAtTime(0.0001, A.currentTime + 1.2);
-      setTimeout(function () { try { b.mus && b.mus.stop(); } catch (e) {} b.g.disconnect(); }, 1400);
-    }
-    function warm() { ['press', 'hover', 'open', 'rustle', 'zoom', 'shutter', 'blow', 'light'].forEach(load); }
-    // Quiet when the tab is in the background
-    document.addEventListener('visibilitychange', function () { if (!A) return; if (document.hidden) A.suspend(); else if (soundOn) A.resume(); });
+    /* ───────── Sound: handled by the site-wide engine (src/scripts/sound.js), so music carries across pages ───────── */
+    // the engine is a module, so it may arrive just after this script: look it up each time
+    var S = {
+      get on() { return !!(window.YQSound && window.YQSound.on); },
+      play: function (n, r) { window.YQSound && window.YQSound.play(n, r); },
+      toggle: function () { window.YQSound && window.YQSound.toggle(); },
+      warm: function () { window.YQSound && window.YQSound.warm(); },
+      prefetch: function () { window.YQSound && window.YQSound.prefetch(); },
+    };
+    var lastHover = 0;
+    function play(name, rate) { S.play(name, rate); }
     var snd = $('snd');
-    // fetch the music early, so it starts the moment sound is switched on
-    function prefetchMusic() { fetchBytes('music').catch(function () { delete bytes.music; }); }
-    snd.addEventListener('pointerenter', prefetchMusic); snd.addEventListener('focus', prefetchMusic);
-    if (soundOn) setTimeout(prefetchMusic, 1500);
-    function syncSnd() { snd.setAttribute('aria-pressed', soundOn); snd.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off'); html.classList.toggle('snd', soundOn); }
+    function syncSnd() { snd.setAttribute('aria-pressed', S.on); snd.setAttribute('aria-label', S.on ? 'Sound on' : 'Sound off'); html.classList.toggle('snd', S.on); }
     syncSnd();
-    snd.addEventListener('click', function () {
-      soundOn = !soundOn; store('sfx', soundOn ? '1' : '0'); syncSnd();
-      if (soundOn) { ac(); warm(); load('press').then(function () { play('press'); }); startBed(); } else stopBed();
-    });
-    // Browsers only allow sound after a tap or click, so a remembered 'on' starts at the first one
-    addEventListener('pointerdown', function () { if (soundOn) { ac(); warm(); startBed(); } }, { once: true });
+    addEventListener('yq-sound', syncSnd, { signal: SIG });
+    snd.addEventListener('pointerenter', S.prefetch); snd.addEventListener('focus', S.prefetch);
+    snd.addEventListener('click', function () { S.toggle(); });
+    if (S.on) S.warm();
 
     /* ───────── Input: drag, pinch, wheel, keys ───────── */
     var ptrs = {}, np = 0, pinch = null, downX = 0, downY = 0, lxp = 0, lyp = 0, lt = 0, moved = false;
@@ -376,13 +326,13 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       lxp = e.clientX; lyp = e.clientY; lt = e.timeStamp;
       dragBy(dx, dy); vx = vx * 0.4 + (dx / dt) * 0.6; vy = vy * 0.4 + (dy / dt) * 0.6;
       if (!moved && Math.hypot(lxp - downX, lyp - downY) > 7) { moved = true; html.classList.add('dragging'); hideHint(); play('rustle'); }
-    });
+    }, { signal: SIG });
     function up(e) {
       if (!ptrs[e.pointerId]) return; delete ptrs[e.pointerId]; np = Object.keys(ptrs).length;
       if (np === 1) { pinch = null; var r = ptrs[Object.keys(ptrs)[0]]; lxp = r.x; lyp = r.y; lt = e.timeStamp; vx = vy = 0; }
       else if (np === 0) { pinch = null; dragging = false; html.classList.remove('dragging'); kick(); }
     }
-    addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    addEventListener('pointerup', up, { signal: SIG }); addEventListener('pointercancel', up, { signal: SIG });
     vp.addEventListener('wheel', function (e) {
       e.preventDefault(); tween = null; var m = e.deltaMode === 1 ? 16 : 1;
       moving();
@@ -401,7 +351,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       else if (e.key === '+' || e.key === '=') zoomBy(1.3);
       else if (e.key === '-' || e.key === '_') zoomBy(1 / 1.3);
       else if (e.key === '0') home();
-    });
+    }, { signal: SIG });
     $('zin').addEventListener('click', function () { play('press'); zoomBy(1.3); });
     $('zout').addEventListener('click', function () { play('press'); zoomBy(1 / 1.3); });
     $('home').addEventListener('click', function () { play('press'); play('zoom', 0.85); home(); });
@@ -416,7 +366,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       var a = e.target.closest('a'); if (!a) return; e.preventDefault();
       if (moved && e.detail !== 0) return;
       try { sessionStorage.setItem('tbLast', a.parentNode.dataset.slug); } catch (e2) {}
-      play('open'); setTimeout(function () { location.href = a.href; }, soundOn ? 380 : 0);
+      play('open'); setTimeout(function () { if (window.YQnav) window.YQnav(a.href); else location.href = a.href; }, S.on ? 380 : 0);
     });
     if (fine) sites.forEach(function (s) {
       s.addEventListener('pointerenter', function () {
@@ -455,7 +405,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     }
     html.classList.add('ready');
     setTimeout(hideHint, 7000);
-    var rt; addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { var was = mode; layout(); if (was !== mode) { px = 0; py = hy0; z = z0; } z = clampZ(z); var o = over(); px -= o.x; py -= o.y; render(); }, 150); });
+    var rt; addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { var was = mode; layout(); if (was !== mode) { px = 0; py = hy0; z = z0; } z = clampZ(z); var o = over(); px -= o.x; py -= o.y; render(); }, 150); }, { signal: SIG });
   })();
   </script>
 </Base>

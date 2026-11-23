@@ -15,7 +15,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
 ---
 <Base title={`${p.title} — Yasir Quazi`} description={p.summary}>
-  <script is:inline define:vars={{ slug: p.slug }}>
+  <script is:inline data-astro-rerun define:vars={{ slug: p.slug }}>
     try { sessionStorage.setItem('last', slug); sessionStorage.setItem('intro', '1'); } catch (e) {}
   </script>
 
@@ -25,6 +25,11 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
         <svg viewBox="0 0 48 16" aria-hidden="true"><path d="M47 8H3M10 1 2 8l8 7" /></svg>
         <span>The map</span>
       </a>
+      <button type="button" class="sound" id="psnd" aria-pressed="false" aria-label="Music off">
+        <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" /><path d="M17 9l5 6M22 9l-5 6" /></svg>
+        <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" /><path d="M17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12" /></svg>
+        <span class="sound-label"></span>
+      </button>
     </nav>
 
     <section class={`reel ${p.shots.kind}`} aria-label="Screens">
@@ -74,7 +79,19 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
     </main>
   </div>
 
-  <script is:inline>
+  <script is:inline data-astro-rerun>
+    (function () {
+      // the music carries over from the map; this button turns it on or off from here too
+      var b = document.getElementById('psnd');
+      var S = { get on() { return !!(window.YQSound && window.YQSound.on); }, toggle: function () { window.YQSound && window.YQSound.toggle(); } };
+      if (b) {
+        var ctl = new AbortController();
+        var show = function () { b.setAttribute('aria-pressed', S.on); b.setAttribute('aria-label', S.on ? 'Music on' : 'Music off'); b.querySelector('.sound-label').textContent = S.on ? 'Music on' : 'Music off'; };
+        show(); addEventListener('yq-sound', show, { signal: ctl.signal });
+        document.addEventListener('astro:before-swap', function () { ctl.abort(); }, { once: true });
+        b.addEventListener('click', function () { S.toggle(); });
+      }
+    })();
     (function () {
       var t = document.getElementById('track'), prev = document.getElementById('prev'), next = document.getElementById('next');
       if (!t) return;
@@ -122,6 +139,17 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
   .back svg { width: 40px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; transition: transform 0.3s var(--ease, ease); }
   .back:hover svg { transform: translateX(-5px); }
   .back:hover { color: var(--ox); }
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .sound {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px 0 10px; cursor: pointer;
+    background: none; border: 0; color: var(--ink-2);
+    font: 600 13px/1 'Cormorant Garamond', Georgia, serif; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .sound svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+  .sound:hover { color: var(--ox); }
+  .sound .i-on, :global(.snd) .sound .i-off { display: none; }
+  :global(.snd) .sound .i-on { display: block; }
+  :global(.snd) .sound { color: var(--ox); }
 
   /* ── Plates: start on the text column and run off the right edge ── */
   .reel { width: var(--col); margin: 0 auto; }
