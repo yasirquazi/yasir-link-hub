@@ -32,6 +32,9 @@ def obj(name, x, y, w, rot=0, blur=0, ao=(0, 0, 0, 0), op=1):
         f'<img src="{T}/{name}.webp" style="position:relative;display:block;width:100%"></div>')
 
 SW, SH = 640, 410
+PAPER = '/home/claude/render/out/paper-landscape.png'
+def fibres(op, seed):
+    return svg_url(f"<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.9 .06' numOctaves='3' seed='{seed}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .25 0 0 0 0 .15 0 0 0 0 .08 0 0 0 {op} -.05'/></filter><rect width='500' height='500' filter='url(#f)'/></svg>")
 html = f"""<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{{font-family:'Cinzel Decorative';font-weight:700;src:url({F}/cinzel-decorative-latin-700-normal.woff2)}}
 @font-face{{font-family:Cinzel;font-weight:500;src:url({F}/cinzel-latin-500-normal.woff2)}}
@@ -49,11 +52,15 @@ html,body{{margin:0}} img{{max-width:none}}
 /* stamp */
 .stampWrap{{left:290px;top:104px;width:{SW}px;height:{SH}px;transform:rotate(-3deg);filter:drop-shadow(0 3px 2px rgb(20 0 2/.55)) drop-shadow(14px 26px 22px rgb(10 0 2/.6))}}
 .stamp{{inset:0;background:#efe3c8;-webkit-mask:{perforated(SW,SH)};mask:{perforated(SW,SH)}}}
-.stamp::before{{content:'';position:absolute;inset:0;background-image:{mottle(.3,9,'.45 .32 .18','.01 .02')},{grain(.25,.85,'.35 .22 .1')}}}
+.stamp::before{{content:'';position:absolute;inset:0;background:url(/home/claude/og2/paper-tex.png) 0 0/700px auto;mix-blend-mode:overlay;opacity:.85}}
+.stamp .tex{{inset:0;background-image:{fibres(.35,5)},{grain(.3,.85,'.35 .22 .1')};mix-blend-mode:multiply}}
 .stamp::after{{content:'';position:absolute;inset:0;background:radial-gradient(120% 120% at 30% 25%,transparent 55%,rgb(110 70 30/.25) 100%)}}
-.field{{left:30px;top:30px;right:30px;bottom:30px;border-radius:10px;background:#7a1218;background-image:{mottle(.55,2)},{grain(.35,.8,'0 0 0')};
+.field{{left:30px;top:30px;right:30px;bottom:30px;border-radius:10px;overflow:hidden;background:#8a1a1f;
   box-shadow:inset 0 0 0 1px rgb(240 220 190/.25),inset 0 0 50px rgb(20 0 2/.65),inset 0 2px 3px rgb(0 0 0/.4)}}
 .field::after{{content:'';position:absolute;inset:10px;border:1px solid rgb(240 220 190/.3);border-radius:6px}}
+.ftex{{inset:0;background:url(/home/claude/og2/paper-tex.png) -30px -30px/700px auto;mix-blend-mode:overlay;opacity:1}}
+.ftex2{{inset:0;background-image:{fibres(.5,8)},{grain(.4,.8,'0 0 0')};mix-blend-mode:multiply}}
+.fwash{{inset:0;background:radial-gradient(90% 80% at 35% 30%,rgb(255 200 170/.16),transparent 60%),radial-gradient(120% 120% at 50% 50%,transparent 50%,rgb(30 0 4/.5) 100%)}}
 .k{{font:500 13px Cinzel;letter-spacing:.32em;text-transform:uppercase;color:#ecd3ad;opacity:.85}}
 .nm{{left:0;right:0;top:118px;text-align:center;font:700 64px/1 'Cinzel Decorative';color:#f6e7cc;
   text-shadow:0 1px 0 rgb(255 240 210/.25),0 -1px 0 rgb(40 0 4/.6),0 6px 18px rgb(20 0 2/.55)}}
@@ -64,10 +71,10 @@ html,body{{margin:0}} img{{max-width:none}}
 <div class="abs desk-tone"></div>
 <img class="abs shade" src="{T}/window-shade.webp"><img class="abs light" src="{T}/window-light.webp">
 {obj('candle', -20, -60, 330, 0, 1.4, (110, 160, 140, 90), .97)}
-{obj('pen', 860, -70, 430, -32, 1.6)}
+{obj('pen', -40, 190, 340, 24, 1.4)}
 {obj('compass', -50, 370, 290, 16, 1.6, (60, 110, 170, 160))}
-<div class="abs stampWrap"><div class="abs stamp">
-  <div class="abs field">
+<div class="abs stampWrap"><div class="abs stamp"><div class="abs tex"></div>
+  <div class="abs field"><div class="abs ftex"></div><div class="abs ftex2"></div><div class="abs fwash"></div>
     <div class="abs k" style="left:26px;top:24px">Portfolio</div>
     <div class="abs k" style="right:26px;top:24px">Bangalore</div>
     <div class="abs nm">Yasir Quazi</div>
@@ -78,7 +85,7 @@ html,body{{margin:0}} img{{max-width:none}}
     <div class="abs k" style="right:26px;bottom:22px">MMXXVI</div>
   </div>
 </div></div>
-{obj('inkwell', 965, 300, 250, 0, 0.6, (30, 70, 190, 160))}
+{obj('inkwell', 990, -40, 230, 0, 1.2, (30, 70, 170, 150))}
 {obj('camera', 720, 385, 420, -12, 0, (50, 110, 320, 150))}
 <div class="abs vig"></div><div class="abs grain"></div><div class="abs grain2"></div>
 </div></body></html>"""
@@ -88,6 +95,14 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={'width': 1200, 'height': 630}, device_scale_factor=2)
     pg.goto('file:///home/claude/og2/desk.html'); pg.wait_for_timeout(1000)
     pg.screenshot(path='/home/claude/og2/desk@2x.png'); b.close()
+from PIL import ImageFilter, ImageChops, ImageEnhance
 im = Image.open('/home/claude/og2/desk@2x.png').convert('RGB')
+hi = im.point(lambda v: max(0, v - 150) * 2.4).filter(ImageFilter.GaussianBlur(28))
+im = ImageChops.screen(im, ImageEnhance.Brightness(hi).enhance(0.55))
+halo = im.filter(ImageFilter.GaussianBlur(6)); im = Image.blend(im, ImageChops.screen(im, halo), 0.12)
+im = im.filter(ImageFilter.GaussianBlur(0.9))
+r, g, b = im.split(); r = ImageChops.offset(r, 1, 0); b = ImageChops.offset(b, -1, 0); im = Image.merge('RGB', (r, g, b))
+lift = Image.new('RGB', im.size, (14, 6, 4)); im = ImageChops.add(im, lift, scale=1.0, offset=0) if False else ImageChops.screen(im, lift)
+im.save('/home/claude/og2/desk@2x.png')
 im.resize((1200, 630), Image.LANCZOS).save('/home/claude/og2/desk.png')
 print('ok')
