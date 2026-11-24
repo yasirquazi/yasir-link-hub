@@ -68,13 +68,13 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
           <span class="btn btn-main is-off" aria-disabled="true"><span>Case study soon</span></span>
         )}
         {site ? (
-          <a class="btn btn-alt" href={site.url} target="_blank" rel="noopener"><span>{p.slug === 'portfolio' ? 'Visit portfolio' : 'Visit website'} <i aria-hidden="true">↗</i></span></a>
+          <a class="btn btn-alt" href={site.url} target="_blank" rel="noopener"><span>{p.slug === 'portfolio' ? 'Visit portfolio' : 'Visit website'} <svg class="arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 7.5 7.5 2.5M3.6 2.5h3.9v3.9" /></svg></span></a>
         ) : (
           <span class="btn btn-alt is-off" aria-disabled="true"><span>Coming soon</span></span>
         )}
       </div>
       {p.links.length > 1 && (
-        <p class="also">Also: {p.links.slice(1).map((l) => <a href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}</p>
+        <p class="also">Also: {p.links.slice(1).map((l) => <a href={l.url} target="_blank" rel="noopener">{l.label}<svg class="arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 7.5 7.5 2.5M3.6 2.5h3.9v3.9" /></svg></a>)}</p>
       )}
     </main>
   </div>
@@ -228,7 +228,7 @@ const plates = Array.from({ length: p.shots.count }, (_, i) => ROMAN[i]);
     border: 1px dashed currentColor; opacity: 0.45;
     clip-path: inherit;
   }
-  .btn i { font-style: normal; margin-left: 4px; }
+  :global(.arr) { width: 0.62em; height: 0.62em; margin-left: 0.3em; vertical-align: 0.05em; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; display: inline-block; }
   .btn-main { min-width: 250px; color: #f4e7c9; background: linear-gradient(#7a2228, #5c161b); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12); }
   .btn-main span::before, .btn-main span::after { content: '✦'; font-size: 9px; opacity: 0.7; margin: 0 12px; vertical-align: 2px; }
   .btn-alt { min-width: 190px; color: var(--ox); background: var(--ox); }

@@ -311,19 +311,20 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     if (S.on) S.warm();
 
     /* ───────── Input: drag, pinch, wheel, keys ───────── */
+    var multiAt = 0; // last time two fingers were down
     var ptrs = {}, np = 0, pinch = null, downX = 0, downY = 0, lxp = 0, lyp = 0, lt = 0, moved = false;
     function pinchState() { var ids = Object.keys(ptrs), a = ptrs[ids[0]], b = ptrs[ids[1]]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)) }; }
     vp.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; np = Object.keys(ptrs).length;
-      if (np === 1) { dragging = true; moved = false; tween = null; downX = lxp = e.clientX; downY = lyp = e.clientY; lt = e.timeStamp; vx = vy = 0; }
-      else if (np === 2) { pinch = pinchState(); moved = true; html.classList.add('dragging'); }
+      if (np === 1) { dragging = true; moved = e.timeStamp - multiAt < 450; tween = null; downX = lxp = e.clientX; downY = lyp = e.clientY; lt = e.timeStamp; vx = vy = 0; }
+      else if (np >= 2) { pinch = pinchState(); moved = true; multiAt = e.timeStamp; html.classList.add('dragging'); }
       kick();
     });
     addEventListener('pointermove', function (e) {
       if (fine && !dragging) { tlx = (e.clientX / innerWidth - 0.5) * 2; tly = (e.clientY / innerHeight - 0.5) * 2; kick(); }
       var p = ptrs[e.pointerId]; if (!p) return; p.x = e.clientX; p.y = e.clientY;
-      if (np >= 2 && pinch) { var s = pinchState(); zoomAt(z * s.d / pinch.d, s.x, s.y); px += (s.x - pinch.x) / z; py += (s.y - pinch.y) / z; pinch = s; vx = vy = 0; hideHint(); kick(); return; }
+      if (np >= 2 && pinch) { multiAt = e.timeStamp; var s = pinchState(); zoomAt(z * s.d / pinch.d, s.x, s.y); px += (s.x - pinch.x) / z; py += (s.y - pinch.y) / z; pinch = s; vx = vy = 0; hideHint(); kick(); return; }
       var dx = e.clientX - lxp, dy = e.clientY - lyp, dt = Math.max(1, e.timeStamp - lt) / 16.67;
       lxp = e.clientX; lyp = e.clientY; lt = e.timeStamp;
       dragBy(dx, dy); vx = vx * 0.4 + (dx / dt) * 0.6; vy = vy * 0.4 + (dy / dt) * 0.6;
@@ -344,7 +345,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     }, { passive: false });
     // Safari's own gesture events: only stop its page zoom. The pointer-event pinch above does the zooming,
     // so the two never fight over the zoom level.
-    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { vp.addEventListener(t, function (e) { e.preventDefault(); }); });
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { vp.addEventListener(t, function (e) { e.preventDefault(); multiAt = e.timeStamp || performance.now(); moved = true; }); });
     function zoomBy(f) { play('zoom', f > 1 ? 1.08 : 0.9); animateTo(px, py, z * f, 450); hideHint(); }
     function home() { animateTo(0, hy0, z0, 900); }
     addEventListener('keydown', function (e) {
@@ -366,7 +367,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     });
     $('sites').addEventListener('click', function (e) {
       var a = e.target.closest('a'); if (!a) return; e.preventDefault();
-      if (moved && e.detail !== 0) return;
+      if ((moved && e.detail !== 0) || performance.now() - multiAt < 600) { e.preventDefault(); return; }
       try { sessionStorage.setItem('tbLast', a.parentNode.dataset.slug); } catch (e2) {}
       play('open'); setTimeout(function () { if (window.YQnav) window.YQnav(a.href); else location.href = a.href; }, S.on ? 380 : 0);
     });
@@ -386,7 +387,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     }
     objs.forEach(function (el) {
       if (!el.classList.contains('act')) return;
-      el.addEventListener('click', function (e) { if (moved && e.detail !== 0) return; act(el); });
+      el.addEventListener('click', function (e) { if ((moved && e.detail !== 0) || performance.now() - multiAt < 600) return; act(el); });
       el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(el); } });
     });
 

@@ -21,6 +21,8 @@ const bufs = {}, loading = {}, bytes = {};
 function ac() {
   if (!A) {
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+    // iOS 17+: treat this as media playback so the ringer/silent switch doesn't mute it
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
     A = new C(); master = A.createGain(); master.connect(A.destination);
     A.addEventListener('statechange', () => { if (on && A.state === 'running') startBed(); });
   }
@@ -78,8 +80,8 @@ function setOn(v) {
 }
 // Browsers only allow sound after a tap, click or key press. A remembered 'on'
 // tries straight away and otherwise starts at the first one.
-function wake() { if (on) { ac(); warm(); startBed(); } }
-['pointerdown', 'keydown', 'touchend'].forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
+function wake() { if (on) { ac(); warm(); startBed(); if (A && A.state !== 'running') A.resume().then(startBed, () => {}); } }
+['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
 document.addEventListener('visibilitychange', () => { if (!A) return; if (document.hidden) A.suspend(); else if (on) A.resume(); });
 // the html element is replaced on every page change, so put the class back
 document.addEventListener('astro:after-swap', () => document.documentElement.classList.toggle('snd', on));

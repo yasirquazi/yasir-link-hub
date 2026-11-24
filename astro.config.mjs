@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 // Static output, deployable as-is to Cloudflare Pages (build output: dist).
 export default defineConfig({
   // the live address: used for the link-preview image. Change it when you add your own domain.
-  site: 'https://yasirquazi.yasirquazi2000.workers.dev',
+  site: 'https://yasirquazi.com',
   output: 'static',
   build: {
     format: 'directory',
