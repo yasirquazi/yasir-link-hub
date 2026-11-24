@@ -29,10 +29,9 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     try { if (sessionStorage.getItem('tbIntro')) document.documentElement.classList.add('seen'); } catch (e) {}
   </script>
 
-  <div class="vp" id="vp" data-sfx={`${A}/sfx/`}>
+  <div class="vp" id="vp" data-sfx={`${A}/sfx/`} style={`--grain-tile:url(${A}/burgundy.webp)`}>
     <div class="tilt" id="tilt">
       <div class="world" id="world">
-        <div class="tabletop" id="tabletop" style={`--grain-tile:url(${A}/burgundy.webp)`}></div>
 
         <picture>
           <source media="(max-width: 759px), (max-aspect-ratio: 95/100)" srcset={`${A}/paper-portrait.webp`} width="1240" height="1780" />
@@ -186,7 +185,7 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
       SS = m === 'p' ? 1.45 : 1.22; ITEM_W = 180 * SS; ITEM_H = 240 * SS; html.style.setProperty('--ss', SS);
       T = { x0: -L.PW / 2 - L.padX, x1: L.PW / 2 + L.padX, y0: -L.PH / 2 - L.padY, y1: L.PH / 2 + L.padY };
       // table, paper (its image has a 70px margin for the torn edge and shadow)
-      var EX = 900; place($('tabletop'), T.x0 - EX, T.y0 - EX, T.x1 - T.x0 + EX * 2, T.y1 - T.y0 + EX * 2);
+
       var pe = $('paper');
       place(pe, -L.PW / 2 - 70, -L.PH / 2 - 70, L.PW + 140, L.PH + 140);
       place(map, -L.PW / 2, -L.PH / 2, L.PW, L.PH);
@@ -228,7 +227,8 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
 
       // zoom limits: all of the table at the far end; start framed on the map
       ZMIN = Math.max(0.2, Math.min(vw / (T.x1 - T.x0), vh / (T.y1 - T.y0)));
-      EX = Math.max((vw / ZMIN - (T.x1 - T.x0)) / 2, (vh / ZMIN - (T.y1 - T.y0)) / 2, 0) + 500 / ZMIN; place($('tabletop'), T.x0 - EX, T.y0 - EX, T.x1 - T.x0 + EX * 2, T.y1 - T.y0 + EX * 2);
+      // phones: stop at the whole sheet, not the whole desk. Further out only costs memory.
+      if (m === 'p') ZMIN = Math.max(ZMIN, Math.min(vw / (L.PW + 140), vh / (L.PH + 160)));
       z0 = m === 'l' ? Math.min(1, vw / (L.PW + 180), vh / (L.PH + 200)) : Math.min(0.56, vw / (L.PW * 0.8));
       // phones open on the top of the map, title first
       hy0 = m === 'l' ? 0 : Math.max(-60, (110 - vh / 2) / Math.max(z0, ZMIN) + L.PH / 2);
@@ -249,7 +249,12 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
     function render() {
       var key = px.toFixed(2) + ',' + py.toFixed(2) + ',' + z.toFixed(4) + ',' + lx.toFixed(3) + ',' + ly.toFixed(3);
       if (key === lastKey) return; lastKey = key;
-      world.style.transform = 'translate3d(' + (vw / 2 + px * z).toFixed(2) + 'px,' + (vh / 2 + py * z).toFixed(2) + 'px,0) scale(' + z.toFixed(4) + ')';
+      var ox = vw / 2 + px * z, oy = vh / 2 + py * z;
+      world.style.transform = 'translate3d(' + ox.toFixed(2) + 'px,' + oy.toFixed(2) + 'px,0) scale(' + z.toFixed(4) + ')';
+      // the desk surface moves and scales with the world, but is painted only once, at screen size
+      var tile = 512 * z;
+      vp.style.backgroundSize = tile.toFixed(1) + 'px';
+      vp.style.backgroundPosition = (ox % tile).toFixed(1) + 'px ' + (oy % tile).toFixed(1) + 'px';
       for (var i = 0; i < objs.length; i++) {
         var o = objs[i], dp = +o.dataset.depth;
         o._im = o._im || o.querySelector('.obj-im'); o._sh = o._sh || o.querySelector('.obj-sh');
@@ -428,13 +433,8 @@ const grain = `url("data:image/svg+xml,${encodeURIComponent(
   .paper { position: absolute; max-width: none; }
 
   /* ── The table: baroque burgundy paper with a pressed damask ── */
-  .tabletop::before { content: ''; position: absolute; inset: 0; background: rgb(18 6 4 / 0.38); }
-  .tabletop {
-    background:
-      var(--grain-tile) 0 0 / 512px 512px,
-      #470e15;
-    background-color: #470e15;
-  }
+  /* the desk: burgundy paper, darkened a touch (drawn on the viewport, see render()) */
+  .vp { background-color: #470e15; background-image: linear-gradient(rgb(18 6 4 / 0.38), rgb(18 6 4 / 0.38)), var(--grain-tile); background-size: 512px; }
 
   .paper { pointer-events: none; }
 
